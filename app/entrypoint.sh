@@ -17,7 +17,7 @@ APP_DIR=/work/app
 TEMPLATE_URL="${TEMPLATE_URL:-https://raw.githubusercontent.com/shishi-odoshi/otp-rails-template/main/template.rb}"
 
 echo "==> fetching application template: $TEMPLATE_URL"
-curl -fsSL "$TEMPLATE_URL" -o /tmp/template.rb
+curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors "$TEMPLATE_URL" -o /tmp/template.rb
 
 echo "==> rails new (fresh, from template, postgres)"
 rails new "$APP_DIR" \

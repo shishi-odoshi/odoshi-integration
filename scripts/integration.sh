@@ -126,9 +126,22 @@ phase_setup() {
 
   $COMPOSE up -d beam-queue beam-cable
   wait_until "beam queue worker registered in solid_queue_processes" 180 sql_eq app_production_queue \
-    "SELECT count(*) > 0 FROM solid_queue_processes WHERE kind = 'Worker' AND metadata LIKE '%beam%'" "t"
+    "SELECT count(*) > 0 FROM solid_queue_processes WHERE kind = 'Worker' AND metadata LIKE '%beam%'" "t" \
+    || { beam_diagnostics; return 1; }
   wait_until "beam cable server listening" 180 \
-    appx ruby -e 'require "socket"; TCPSocket.new("beam-cable", 28080).close'
+    appx ruby -e 'require "socket"; TCPSocket.new("beam-cable", 28080).close' \
+    || { beam_diagnostics; return 1; }
+}
+
+beam_diagnostics() { # dumped when beam never comes up (container state + logs)
+  {
+    echo "---- docker compose ps -a ----"
+    $COMPOSE ps -a || true
+    echo "---- beam-queue logs (tail) ----"
+    $COMPOSE logs --no-color --tail 60 beam-queue || true
+    echo "---- beam-cable logs (tail) ----"
+    $COMPOSE logs --no-color --tail 60 beam-cable || true
+  } >&2
 }
 
 phase_1_steady_state() {
@@ -256,13 +269,18 @@ phase_7_clean_teardown() {
 }
 
 run_phase() { # NAME FUNCTION
-  local name=$1 fn=$2 result start dur
+  local name=$1 fn=$2 result start dur status
   start=$(date +%s)
   echo
   echo "===================================================================="
   echo "  PHASE: $name"
   echo "===================================================================="
-  if ( set -eu; "$fn" ); then result=PASS; else result=FAIL; OVERALL=1; fi
+  # The subshell must NOT be an if-condition: bash suppresses errexit in any
+  # tested context — even when `set -e` is re-enabled inside — which once let
+  # a failed `compose build` slide through setup and mask the real error.
+  ( set -eu; "$fn" )
+  status=$?
+  if [ "$status" -eq 0 ]; then result=PASS; else result=FAIL; OVERALL=1; fi
   dur=$(( $(date +%s) - start ))
   SCOREBOARD+=("$(printf '%-22s %-4s %5ss' "$name" "$result" "$dur")")
   echo "--- $name: $result (${dur}s)"
@@ -283,7 +301,14 @@ else
   run_phase 7-clean-teardown   phase_7_clean_teardown
 fi
 
+# Capture everything diagnosable into the artifact, including container
+# STATE (a service whose image never built produces no log lines at all —
+# the ps snapshot is what shows it was never created).
 $COMPOSE logs --no-color > logs/compose.log 2>&1 || true
+$COMPOSE ps -a > logs/compose-ps.txt 2>&1 || true
+for svc in postgres app beam-queue beam-cable; do
+  $COMPOSE logs --no-color "$svc" > "logs/$svc.log" 2>&1 || true
+done
 
 echo
 echo "==================== SCOREBOARD ===================="

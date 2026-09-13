@@ -14,9 +14,10 @@ cd "$APP_DIR"
 cp "$PATCHES/database.yml" config/database.yml
 
 # --- 2. Queue routing: Ruby workers keep "default", beam owns "elixir" ------
-# Solid Queue's generated queue.yml has workers on "*", which would let the
-# Ruby worker claim beam's designated queue. The dispatcher still dispatches
-# every queue (scheduled jobs flow to beam once ready).
+# Solid Queue's stock queue.yml has workers on "*", which would let the Ruby
+# worker claim beam's designated queue (beam#10). template.rb now pins this
+# itself via gsub_file; the harness still writes its own copy so the routing
+# this suite asserts is deterministic even if the template's shape changes.
 cp "$PATCHES/queue.yml" config/queue.yml
 
 # --- 3. otp-rails-resilience (unpublished — git source) ---------------------

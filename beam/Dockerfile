@@ -10,10 +10,22 @@ RUN apt-get update && \
 ENV MIX_ENV=prod
 
 WORKDIR /runner
-RUN mix local.hex --force && mix local.rebar --force
+# builds.hex.pm timeouts are an observed transient CI failure mode (60s
+# request timeout killed a whole integration run); retry the
+# network-dependent bootstrap steps instead of failing the stack on a blip.
+RUN for i in 1 2 3 4 5; do \
+      mix local.hex --force && mix local.rebar --force && break; \
+      [ "$i" = 5 ] && exit 1; \
+      echo "hex/rebar bootstrap failed (attempt $i) — retrying in 15s"; sleep 15; \
+    done
 
 COPY runner/mix.exs ./
-RUN mix deps.get && mix deps.compile
+RUN for i in 1 2 3 4 5; do \
+      mix deps.get && break; \
+      [ "$i" = 5 ] && exit 1; \
+      echo "mix deps.get failed (attempt $i) — retrying in 15s"; sleep 15; \
+    done && \
+    mix deps.compile
 
 COPY runner/lib lib
 RUN mix compile
