@@ -1,0 +1,36 @@
+# Integration harness database config: the realistic Rails 8 production shape —
+# four databases (primary / queue / cable / cache) on one postgres:16 service.
+# Spec names match Rails' conventions so db:prepare loads db/queue_schema.rb,
+# db/cable_schema.rb and db/cache_schema.rb into the right databases.
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  host: <%= ENV.fetch("DB_HOST", "postgres") %>
+  username: <%= ENV.fetch("DB_USER", "postgres") %>
+  password: <%= ENV.fetch("DB_PASSWORD", "postgres") %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+production:
+  primary:
+    <<: *default
+    database: app_production
+  cache:
+    <<: *default
+    database: app_production_cache
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *default
+    database: app_production_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: app_production_cable
+    migrations_paths: db/cable_migrate
+
+development:
+  <<: *default
+  database: app_development
+
+test:
+  <<: *default
+  database: app_test

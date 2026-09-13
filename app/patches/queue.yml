@@ -1,0 +1,22 @@
+# Integration harness queue topology: the Ruby worker (bin/jobs, supervised as
+# the :jobs child) works ONLY the "default" queue; the "elixir" queue is the
+# designated queue of the beam Solid Queue worker (OtpRailsBeam.Queue).
+# The dispatcher keeps dispatching scheduled jobs for every queue.
+default: &default
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 500
+  workers:
+    - queues: [ default ]
+      threads: 3
+      processes: 1
+      polling_interval: 0.1
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default

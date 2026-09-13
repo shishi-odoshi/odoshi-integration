@@ -1,0 +1,77 @@
+# Full-stack integration harness for the shishi-odoshi otp-rails project.
+#
+#   postgres    postgres:16 — the 4 production databases (primary/queue/cable/cache)
+#   app         Rails app generated FRESH from otp-rails-template's template.rb at
+#               container start, patched for Postgres + otp-rails-resilience, run
+#               under bin/supervise (otp-rails). Never committed — no drift.
+#   beam-queue  Elixir Solid Queue worker on the "elixir" queue (OtpRailsBeam.Queue)
+#   beam-cable  ActionCable-compatible cable server from the Solid Cable schema
+#               (OtpRailsBeam.Cable), sharing SECRET_KEY_BASE with the app.
+#
+# beam services run their processes under NATIVE OTP supervision inside one BEAM
+# node; the node itself is respawned by a shell loop (see beam/start.sh), playing
+# the "platform is the final supervisor" role otp-rails assigns to Kamal/K8s.
+
+x-shared-env: &shared-env
+  SECRET_KEY_BASE: integration-harness-secret-key-base-0123456789abcdef
+  DB_HOST: postgres
+  DB_USER: postgres
+  DB_PASSWORD: postgres
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  app:
+    build: ./app
+    init: true
+    environment:
+      <<: *shared-env
+      RAILS_ENV: production
+      PORT: "3000"
+      RAILS_LOG_TO_STDOUT: "1"
+    volumes:
+      - ./app:/harness:ro
+    command: ["/harness/entrypoint.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      # rails new + bundle install + db:prepare happen at container start
+      start_period: 900s
+      start_interval: 5s
+
+  beam-queue:
+    build: ./beam
+    init: true
+    environment:
+      <<: *shared-env
+      ROLE: queue
+      QUEUE_DB: app_production_queue
+      PRIMARY_DB: app_production
+    depends_on:
+      app:
+        condition: service_healthy
+
+  beam-cable:
+    build: ./beam
+    init: true
+    environment:
+      <<: *shared-env
+      ROLE: cable
+      CABLE_DB: app_production_cable
+      CABLE_PORT: "28080"
+    depends_on:
+      app:
+        condition: service_healthy

@@ -1,0 +1,29 @@
+name: integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # The stack is assembled fresh from its upstream repos on every run, so a
+    # daily run catches drift in any of the four seams even without pushes.
+    - cron: "17 6 * * *"
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the full-stack integration program
+        run: ./scripts/integration.sh
+
+      - name: Upload stack logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stack-logs
+          path: logs/
+          if-no-files-found: ignore
