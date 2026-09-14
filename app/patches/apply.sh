@@ -20,13 +20,13 @@ cp "$PATCHES/database.yml" config/database.yml
 # this suite asserts is deterministic even if the template's shape changes.
 cp "$PATCHES/queue.yml" config/queue.yml
 
-# --- 3. otp-rails-resilience (unpublished — git source) ---------------------
+# --- 3. odoshi-resilience (unpublished — git source) ------------------------
 cat >> Gemfile <<'RUBY'
 
 # Integration harness: crash-only conventions, Rails.supervisor.restart!,
 # telemetry bridge, boot:check (unpublished; consumed from git).
-gem "otp-rails-resilience", github: "shishi-odoshi/otp-rails-resilience",
-                            require: "otp_rails/resilience"
+gem "odoshi-resilience", github: "shishi-odoshi/odoshi-resilience",
+                         require: "odoshi/resilience"
 RUBY
 
 # --- 4. Integration surface: marker model/jobs + HTTP endpoints -------------
@@ -58,7 +58,7 @@ ruby -e '
 # --- 5. Production environment tweaks ---------------------------------------
 # a) No TLS inside the compose network (only /up is excluded by default).
 # b) Fast Solid Queue process liveness so the ProcessPrunedError phase
-#    (otp-rails#41 semantics) fits CI: heartbeat 3s, prunable after 15s.
+#    (odoshi#41 semantics) fits CI: heartbeat 3s, prunable after 15s.
 #    Applies to Ruby and (via config) beam workers alike.
 ruby -e '
   path = "config/environments/production.rb"

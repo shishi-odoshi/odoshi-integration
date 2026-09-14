@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Full-stack integration test for the shishi-odoshi otp-rails project.
+# Full-stack integration test for the shishi-odoshi odoshi project.
 #
 # Stands up postgres + a freshly template-generated Rails app under
-# bin/supervise (otp-rails) + the beam Solid Queue worker and cable server,
+# bin/supervise (odoshi) + the beam Solid Queue worker and cable server,
 # then runs the phased test program:
 #
 #   1 steady-state        both queues drain exactly-once; ws broadcast round-trip
 #   2 chaos-web           kill -9 puma; /up back < 10s; cable still delivers
 #   3 chaos-ruby-jobs     kill -9 bin/jobs; default continues; elixir unaffected
 #   4 chaos-beam-queue    kill -9 beam worker mid-burst; claimed jobs FAIL with
-#                         ProcessPrunedError after prune (otp-rails#41 semantics);
+#                         ProcessPrunedError after prune (odoshi#41 semantics);
 #                         unclaimed drain on return; default unaffected
 #   5 chaos-cable         kill beam cable; ws client reconnects; no replay
 #   6 resilience-in-situ  bin/rails boot:check; Rails.supervisor.restart!(:jobs)
@@ -189,7 +189,7 @@ phase_4_chaos_beam_queue() {
   wait_until "unclaimed p4e jobs drained by respawned beam worker" 120 sql_eq app_production_queue \
     "SELECT count(*) FROM solid_queue_jobs WHERE arguments LIKE '%p4e-%' AND finished_at IS NOT NULL" "$(( 12 - c ))"
 
-  # Solid Queue semantics (otp-rails#41): claims of a pruned process are
+  # Solid Queue semantics (odoshi#41): claims of a pruned process are
   # FAILED with ProcessPrunedError, not released. Assert it, don't fight it.
   local since_kill=$(( SECONDS - killed_at ))
   (( since_kill < 20 )) && sleep $(( 20 - since_kill ))   # > process_alive_threshold (15s)
@@ -264,7 +264,7 @@ phase_7_clean_teardown() {
   fi
   echo "assert ok: no orphaned app processes"
 
-  appx bash -c 'test ! -e /work/app/tmp/otp-rails.sock'
+  appx bash -c 'test ! -e /work/app/tmp/odoshi.sock'
   echo "assert ok: supervision socket unlinked"
 }
 

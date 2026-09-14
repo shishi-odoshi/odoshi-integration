@@ -22,7 +22,7 @@ defmodule BeamRunner.MixProject do
     [
       # The Elixir sidecar under test — always the current main, matching the
       # harness' no-drift philosophy (nothing vendored, nothing pinned).
-      {:otp_rails_beam, git: "https://github.com/shishi-odoshi/beam.git", branch: "main"}
+      {:odoshi_beam, git: "https://github.com/shishi-odoshi/beam.git", branch: "main"}
     ]
   end
 end

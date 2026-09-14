@@ -1,18 +1,18 @@
-# otp-rails-integration
+# odoshi-integration
 
 The full-stack integration harness for the [shishi-odoshi](https://github.com/shishi-odoshi)
-otp-rails project — the first environment that runs the **entire stack at once**
+odoshi project — the first environment that runs the **entire stack at once**
 and applies chaos across the seams:
 
-- **[otp-rails](https://github.com/shishi-odoshi/otp-rails)** — the slim
+- **[odoshi](https://github.com/shishi-odoshi/odoshi)** — the slim
   supervisor (`bin/supervise`) owning the Rails app's `web` and `jobs` children.
-- **[otp-rails-template](https://github.com/shishi-odoshi/otp-rails-template)** —
+- **[odoshi-template](https://github.com/shishi-odoshi/odoshi-template)** —
   `template.rb` generates the supervised Rails app **fresh on every run**
   (nothing generated is committed here, mirroring the template repo's no-drift rule).
 - **[beam](https://github.com/shishi-odoshi/beam)** — the Elixir sidecar:
   a Solid Queue worker on the designated `elixir` queue, and an
   ActionCable-compatible cable server fed from the Solid Cable schema.
-- **[otp-rails-resilience](https://github.com/shishi-odoshi/otp-rails-resilience)**
+- **[odoshi-resilience](https://github.com/shishi-odoshi/odoshi-resilience)**
   (unpublished, consumed via git source) — telemetry bridge,
   `Rails.supervisor.restart!`, breakers, `bin/rails boot:check`.
 
@@ -36,28 +36,28 @@ postgres:16 ── app_production           (primary; job_markers side-effect ta
             ── app_production_cache
 
 app         rails new … -m template.rb  (fresh every run, -d postgresql)
-            └─ bin/supervise (otp-rails, rest_for_one)
+            └─ bin/supervise (odoshi, rest_for_one)
                ├─ :web   puma        — HTTP /up probe + §5 heartbeat
                └─ :jobs  bin/jobs    — Solid Queue worker, queues: [default]
 
-beam-queue  OtpRailsBeam.Queue queues: ["elixir"]   — native OTP supervision
-beam-cable  OtpRailsBeam.Cable :28080 /cable        — shares SECRET_KEY_BASE
+beam-queue  OdoshiBeam.Queue queues: ["elixir"]   — native OTP supervision
+beam-cable  OdoshiBeam.Cable :28080 /cable        — shares SECRET_KEY_BASE
 ```
 
 beam processes run under **native OTP supervision** inside their nodes; the
 node itself is respawned by `beam/start.sh` (the "platform is the final
-supervisor" layer otp-rails assigns to Kamal/K8s — SIGKILLing the node is the
+supervisor" layer odoshi assigns to Kamal/K8s — SIGKILLing the node is the
 chaos input, the loop is the recovery path).
 
 ## The seam map
 
 | Seam | Contract | Exercised by |
 |---|---|---|
-| supervisor ⇄ web/jobs | otp-rails DESIGN §5 heartbeats + probes | phases 2, 3, 7 |
-| app code ⇄ supervisor | §9 control socket (`Rails.supervisor.restart!`) via otp-rails-resilience | phase 6 |
+| supervisor ⇄ web/jobs | odoshi DESIGN §5 heartbeats + probes | phases 2, 3, 7 |
+| app code ⇄ supervisor | §9 control socket (`Rails.supervisor.restart!`) via odoshi-resilience | phase 6 |
 | Rails ⇄ beam queue | Solid Queue Postgres schema, routing **by queue** (`default` = Ruby, `elixir` = beam) | phases 1, 3, 4 |
 | Rails ⇄ beam cable | Solid Cable schema + Turbo signed stream names keyed off shared `SECRET_KEY_BASE` | phases 1, 2, 5 |
-| dead-worker semantics | Solid Queue pruning: claims of a SIGKILLed worker **fail** with `ProcessPrunedError` ([otp-rails#41](https://github.com/shishi-odoshi/otp-rails/issues/41) — asserted, not fought) | phase 4 |
+| dead-worker semantics | Solid Queue pruning: claims of a SIGKILLed worker **fail** with `ProcessPrunedError` ([odoshi#41](https://github.com/shishi-odoshi/odoshi/issues/41) — asserted, not fought) | phase 4 |
 
 Side effects are observable by construction: the shared test ActiveJob
 (`IntegrationMarkerJob` / `SlowMarkerJob`) writes a `job_markers` row tagged
@@ -85,7 +85,7 @@ The generated app is pure template output plus these patches (`app/patches/`):
 - `database.yml` → the 4-database Postgres production shape.
 - `queue.yml` → Ruby workers pinned to `queues: [default]` (the generated `*`
   would let Ruby claim beam's designated queue).
-- `Gemfile` += `otp-rails-resilience` from git (unpublished).
+- `Gemfile` += `odoshi-resilience` from git (unpublished).
 - Integration surface: marker model/jobs, `/integration/*` endpoints
   (enqueue / broadcast / signed_stream / restart_jobs) so every stimulus
   originates inside supervised production processes.

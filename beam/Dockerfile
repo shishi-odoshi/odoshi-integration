@@ -1,6 +1,6 @@
-# beam sidecar image: runs OtpRailsBeam.Queue (ROLE=queue) or
-# OtpRailsBeam.Cable (ROLE=cable) against the app's Postgres databases.
-# otp_rails_beam is consumed straight from the shishi-odoshi/beam git repo.
+# beam sidecar image: runs OdoshiBeam.Queue (ROLE=queue) or
+# OdoshiBeam.Cable (ROLE=cable) against the app's Postgres databases.
+# odoshi_beam is consumed straight from the shishi-odoshi/beam git repo.
 FROM elixir:1.18
 
 RUN apt-get update && \

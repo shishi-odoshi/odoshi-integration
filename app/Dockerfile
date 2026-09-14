@@ -1,5 +1,5 @@
 # Environment for the GENERATED Rails app. The app itself is created fresh at
-# container start (see entrypoint.sh) from otp-rails-template's template.rb —
+# container start (see entrypoint.sh) from odoshi-template's template.rb —
 # mirroring the template repo's no-drift philosophy. This image only prepares
 # the toolchain and pre-warms the gems the generated app will resolve, so the
 # runtime `bundle install` is fast.
@@ -19,7 +19,7 @@ ENV BUNDLE_JOBS=4 \
 RUN gem install rails --no-document && \
     gem install pg puma bootsnap propshaft importmap-rails turbo-rails \
                 stimulus-rails jbuilder solid_queue solid_cable solid_cache \
-                thruster otp-rails --no-document && \
+                thruster odoshi --no-document && \
     gem install json --version "< 3.0" --no-document
 
 WORKDIR /work
