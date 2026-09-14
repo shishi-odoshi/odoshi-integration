@@ -19,7 +19,7 @@ defmodule BeamRunner.Handlers do
 
   defmodule Marker do
     @moduledoc "Elixir twin of IntegrationMarkerJob."
-    @behaviour OtpRailsBeam.Queue.Handler
+    @behaviour OdoshiBeam.Queue.Handler
 
     @impl true
     def perform([marker]), do: BeamRunner.Handlers.insert_marker(marker)
@@ -27,7 +27,7 @@ defmodule BeamRunner.Handlers do
 
   defmodule SlowMarker do
     @moduledoc "Elixir twin of SlowMarkerJob — slow enough for chaos to strike mid-flight."
-    @behaviour OtpRailsBeam.Queue.Handler
+    @behaviour OdoshiBeam.Queue.Handler
 
     @impl true
     def perform([marker]) do

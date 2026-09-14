@@ -1,16 +1,16 @@
-# Full-stack integration harness for the shishi-odoshi otp-rails project.
+# Full-stack integration harness for the shishi-odoshi odoshi project.
 #
 #   postgres    postgres:16 — the 4 production databases (primary/queue/cable/cache)
-#   app         Rails app generated FRESH from otp-rails-template's template.rb at
-#               container start, patched for Postgres + otp-rails-resilience, run
-#               under bin/supervise (otp-rails). Never committed — no drift.
-#   beam-queue  Elixir Solid Queue worker on the "elixir" queue (OtpRailsBeam.Queue)
+#   app         Rails app generated FRESH from odoshi-template's template.rb at
+#               container start, patched for Postgres + odoshi-resilience, run
+#               under bin/supervise (odoshi). Never committed — no drift.
+#   beam-queue  Elixir Solid Queue worker on the "elixir" queue (OdoshiBeam.Queue)
 #   beam-cable  ActionCable-compatible cable server from the Solid Cable schema
-#               (OtpRailsBeam.Cable), sharing SECRET_KEY_BASE with the app.
+#               (OdoshiBeam.Cable), sharing SECRET_KEY_BASE with the app.
 #
 # beam services run their processes under NATIVE OTP supervision inside one BEAM
 # node; the node itself is respawned by a shell loop (see beam/start.sh), playing
-# the "platform is the final supervisor" role otp-rails assigns to Kamal/K8s.
+# the "platform is the final supervisor" role odoshi assigns to Kamal/K8s.
 
 x-shared-env: &shared-env
   SECRET_KEY_BASE: integration-harness-secret-key-base-0123456789abcdef

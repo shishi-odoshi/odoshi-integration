@@ -35,7 +35,7 @@ class IntegrationController < ActionController::Base
   end
 
   # GET /integration/restart_jobs — DESIGN §7/§9: restarting is a feature.
-  # otp-rails-resilience sends {"cmd":"restart","id":"jobs"} over the socket.
+  # odoshi-resilience sends {"cmd":"restart","id":"jobs"} over the socket.
   def restart_jobs
     render json: {
       supervised: Rails.supervisor.supervised?,

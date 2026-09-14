@@ -2,10 +2,10 @@ defmodule BeamRunner.Application do
   @moduledoc """
   Starts one beam role per container:
 
-    * ROLE=queue — `OtpRailsBeam.Queue` on the designated "elixir" queue of
+    * ROLE=queue — `OdoshiBeam.Queue` on the designated "elixir" queue of
       the Rails app's Solid Queue database, plus a Postgrex connection to the
       PRIMARY database where the marker handlers record side effects.
-    * ROLE=cable — `OtpRailsBeam.Cable` serving the ActionCable v1 protocol
+    * ROLE=cable — `OdoshiBeam.Cable` serving the ActionCable v1 protocol
       from the Solid Cable database, sharing the app's SECRET_KEY_BASE so
       Turbo-signed stream names verify.
 
@@ -32,7 +32,7 @@ defmodule BeamRunner.Application do
          name: BeamRunner.PrimaryDB,
          pool_size: 2
        )},
-      {OtpRailsBeam.Queue,
+      {OdoshiBeam.Queue,
        db: db(System.get_env("QUEUE_DB", "app_production_queue")),
        queues: ["elixir"],
        handlers: %{
@@ -48,7 +48,7 @@ defmodule BeamRunner.Application do
 
   defp children("cable") do
     [
-      {OtpRailsBeam.Cable,
+      {OdoshiBeam.Cable,
        port: String.to_integer(System.get_env("CABLE_PORT", "28080")),
        ip: {0, 0, 0, 0},
        db: db(System.get_env("CABLE_DB", "app_production_cable")),

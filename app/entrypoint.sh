@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Generate a supervised Rails app FRESH from otp-rails-template's template.rb,
-# patch it for the integration stack (Postgres multi-DB, otp-rails-resilience,
+# Generate a supervised Rails app FRESH from odoshi-template's template.rb,
+# patch it for the integration stack (Postgres multi-DB, odoshi-resilience,
 # queue routing, integration endpoints), prepare the databases, and run it
-# under bin/supervise (otp-rails).
+# under bin/supervise (odoshi).
 #
 # The supervisor is intentionally NOT PID 1: after it exits, its status is
 # written to /tmp/supervise.exit and the container stays alive so the harness
@@ -14,7 +14,7 @@ export RAILS_ENV=production
 export PORT="${PORT:-3000}"
 
 APP_DIR=/work/app
-TEMPLATE_URL="${TEMPLATE_URL:-https://raw.githubusercontent.com/shishi-odoshi/otp-rails-template/main/template.rb}"
+TEMPLATE_URL="${TEMPLATE_URL:-https://raw.githubusercontent.com/shishi-odoshi/odoshi-template/main/template.rb}"
 
 echo "==> fetching application template: $TEMPLATE_URL"
 curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors "$TEMPLATE_URL" -o /tmp/template.rb
@@ -30,7 +30,7 @@ cd "$APP_DIR"
 echo "==> applying integration patches"
 /harness/patches/apply.sh "$APP_DIR"
 
-echo "==> bundle install (otp-rails-resilience via git source)"
+echo "==> bundle install (odoshi-resilience via git source)"
 bundle install
 
 echo "==> db:prepare (primary + queue + cable + cache)"
